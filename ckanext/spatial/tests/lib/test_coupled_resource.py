@@ -165,6 +165,13 @@ class TestUpdateCoupledResources(SpatialTestBase):
         assert_equal(self._get_coupled_resources(),
                      expected_couples)
         
+    def test_09_harvest_dataset_to_match_two_existing_services(self):
+        package = model.Package.by_name(u'datasetE')
+        update_coupled_resources(package, ref_prefix+'Eref')
+        assert_equal(self._get_coupled_resources(),
+                     change_line(self.couples_before,
+                                 (u'serviceA', u'Eref', None),
+                                 (u'serviceA', u'Eref', u'datasetE')))
 
     def _get_coupled_resources(self):
         return set([(couple.service_record.name if couple.service_record else None,
