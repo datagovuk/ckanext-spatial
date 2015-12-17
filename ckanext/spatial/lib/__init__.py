@@ -44,6 +44,8 @@ def save_package_extent(package_id, geometry = None, srid = None):
 
        The responsibility for calling model.Session.commit() is left to the
        caller.
+
+       Returns True if the extent actually changed
     '''
     db_srid = int(config.get('ckan.spatial.srid', '4326'))
 
@@ -67,6 +69,8 @@ def save_package_extent(package_id, geometry = None, srid = None):
             package_extent = PackageExtent(package_id=package_id,
                                         the_geom=WKTElement(shape.wkt, srid))
 
+    extent_has_changed = False
+
     # Check if extent exists
     if existing_package_extent:
 
@@ -74,6 +78,7 @@ def save_package_extent(package_id, geometry = None, srid = None):
         if not geometry:
             existing_package_extent.delete()
             log.debug('Deleted extent for package %s' % package_id)
+            extent_has_changed = True
         else:
             # Check if extent changed
             if not compare_geometry_fields(package_extent.the_geom, existing_package_extent.the_geom):
@@ -81,12 +86,17 @@ def save_package_extent(package_id, geometry = None, srid = None):
                 existing_package_extent.the_geom = package_extent.the_geom
                 existing_package_extent.save()
                 log.debug('Updated extent for package %s' % package_id)
+                extent_has_changed = True
             else:
                 log.debug('Extent for package %s unchanged' % package_id)
+                extent_has_changed = False
     elif geometry:
         # Insert extent
         Session.add(package_extent)
         log.debug('Created new extent for package %s' % package_id)
+        extent_has_changed = True
+
+    return extent_has_changed
 
 def validate_bbox(bbox_values):
     '''
