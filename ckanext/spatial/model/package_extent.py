@@ -33,14 +33,13 @@ def setup(srid=None):
         if not package_extent_table.exists():
             try:
                 package_extent_table.create()
-            except Exception,e:
+            except Exception:
                 # Make sure the table does not remain incorrectly created
                 # (eg without geom column or constraints)
                 if package_extent_table.exists():
                     Session.execute('DROP TABLE package_extent')
                     Session.commit()
-
-                raise e
+                raise
 
             log.debug('Spatial tables created')
         else:
