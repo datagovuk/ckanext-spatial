@@ -273,6 +273,8 @@ class GeminiHarvester(GeminiSpatialHarvester):
     # force_import is set when there is a reimport (harvest_objects_import')
     force_import = False
 
+    _user_name = None
+
     extent_template = Template('''
     {"type":"Polygon","coordinates":[[[$minx, $miny],[$minx, $maxy], [$maxx, $maxy], [$maxx, $miny], [$minx, $miny]]]}
     ''')
@@ -572,22 +574,28 @@ class GeminiHarvester(GeminiSpatialHarvester):
             #gemini_values['temporal-extent-end'].sort()
             extras['temporal_coverage-to'] = gemini_values['temporal-extent-end']
 
-        # Construct a GeoJSON extent so ckanext-spatial can register the extent geometry
-        extent_string = self.extent_template.substitute(
-                minx = extras['bbox-east-long'],
-                miny = extras['bbox-south-lat'],
-                maxx = extras['bbox-west-long'],
-                maxy = extras['bbox-north-lat']
+        # Construct a GeoJSON extent so ckanext-spatial can register the extent
+        # geometry.
+        # nonGeographicDataset doesn't require values for bbox, so skip if this
+        # is the case.
+        if extras['bbox-east-long'] != '':
+            extent_string = self.extent_template.substitute(
+                minx=extras['bbox-east-long'],
+                miny=extras['bbox-south-lat'],
+                maxx=extras['bbox-west-long'],
+                maxy=extras['bbox-north-lat']
                 )
 
-        try:
-            extent_json = json.loads(extent_string)
-            extras['spatial'] = extent_string.strip()
-        except:
-            # Unable to load this string as JSON, so perhaps the template
-            # is incomplete or one of the extra fields contains an empty string
-            log.error("Failed to build the spatial extra for {0} using {1}"\
-                .format(gemini_values['title'], extent_string))
+            try:
+                json.loads(extent_string)
+                extras['spatial'] = extent_string.strip()
+            except ValueError:
+                # extent_string is not JSON, so perhaps the template is
+                # incomplete or one of the extra fields contains an empty
+                # string. Don't save in this case.
+                log.error(
+                    'Failed to build the spatial extra for {0} using {1}'
+                    .format(gemini_values['title'], extent_string))
 
         tags = []
         for tag in gemini_values['tags']:
@@ -873,12 +881,11 @@ class GeminiHarvester(GeminiSpatialHarvester):
         else:
             package_schema = logic.schema.default_update_package_schema()
 
-        # TODO: user
-        context = {'model':model,
-                   'session':Session,
-                   'user':'harvest',
-                   'schema':package_schema,
-                   'extras_as_string':True,
+        context = {'model': model,
+                   'session': Session,
+                   'user': self._get_user_name(),
+                   'schema': package_schema,
+                   'extras_as_string': True,
                    'api_version': '2'}
         if not package:
             # We need to explicitly provide a package ID, otherwise ckanext-spatial
@@ -989,6 +996,15 @@ class GeminiHarvester(GeminiSpatialHarvester):
         find_matches(lambda res1, res2: res1['url'] == res2['url'])
         log.info('Matched resources to existing ones: %s/%s',
                  len(res_dicts)-len(unmatched_res_dicts), len(res_dicts))
+
+    def _get_user_name(self):
+        if self._user_name:
+            return self._user_name
+
+        user = get_action('get_site_user')({'ignore_auth': True}, {})
+        self._user_name = user['name']
+
+        return self._user_name
 
 
 class GeminiCswHarvester(GeminiHarvester, SingletonPlugin):
