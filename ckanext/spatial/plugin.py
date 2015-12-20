@@ -157,6 +157,7 @@ class SpatialQuery(p.SingletonPlugin):
         return map
 
     def before_search(self,search_params):
+        from ckan.lib.search import SearchError
         from ckanext.spatial.lib import validate_bbox, bbox_query, bbox_query_ordered
         if 'extras' in search_params and 'ext_bbox' in search_params['extras'] \
             and search_params['extras']['ext_bbox']:
