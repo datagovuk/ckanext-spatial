@@ -107,6 +107,9 @@ class GeminiSpatialHarvester(HarvesterBase):
             except socket.timeout, e:
                 log.info('WMS check for %s failed due to HTTP connection timeout error "%s".', capabilities_url, e)
                 return False
+            except socket.error, e:
+                log.info('WMS check for %s failed due to HTTP socket connection error "%s".', capabilities_url, e)
+                return False
             except httplib.HTTPException, e:
                 log.info('WMS check for %s failed due to HTTP error "%s".', capabilities_url, e)
                 return False
@@ -132,6 +135,9 @@ class GeminiSpatialHarvester(HarvesterBase):
                 except socket.timeout, e:
                     # e.g. http://lichfielddc.maps.arcgis.com/apps/webappviewer/index.html?id=2be0619b59a5418c8c9d785c09504f57
                     log.info('WMS check for %s failed due to HTTP connection timeout error "%s".', capabilities_url, e)
+                    return False
+                except socket.error, e:
+                    log.info('WMS check for %s failed due to HTTP socket connection error "%s".', capabilities_url, e)
                     return False
                 is_wms = isinstance(wms.contents, dict) and wms.contents != {}
                 return is_wms
@@ -184,6 +190,9 @@ class GeminiSpatialHarvester(HarvesterBase):
                 return False, set()
             except socket.timeout, e:
                 log.info('WMS check for %s failed due to HTTP connection timeout error "%s".', capabilities_url, e)
+                return False, set()
+            except socket.error, e:
+                log.info('WMS check for %s failed due to HTTP connection socket error "%s".', capabilities_url, e)
                 return False, set()
             except httplib.HTTPException, e:
                 log.info('WMS check for %s failed due to HTTP error "%s".', capabilities_url, e)
@@ -256,6 +265,9 @@ class GeminiSpatialHarvester(HarvesterBase):
             return None
         except socket.timeout, e:
             log.info('HTTP connection timeout error "%s" URL: %s', e, url)
+            return None
+        except socket.error, e:
+            log.info('HTTP connection socket error "%s" URL: %s', e, url)
             return None
         except httplib.HTTPException, e:
             log.info('HTTP access of %s failed due to HTTP error "%s".', url, e)
@@ -1072,7 +1084,7 @@ class GeminiCswHarvester(GeminiHarvester, SingletonPlugin):
                         raise
                     continue
 
-        except (urllib2.URLError, socket.timeout) as e:
+        except (urllib2.URLError, socket.error) as e:
             log.info('Exception: %s' % text_traceback())
             self._save_gather_error('URL Error gathering the identifiers from the CSW server [%s]' % str(e), harvest_job)
             if debug_exception_mode:
