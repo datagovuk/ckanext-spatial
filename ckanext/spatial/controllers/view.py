@@ -46,12 +46,15 @@ class ViewController(BaseController):
         return obj
 
     def harvest_metadata_html(self, id):
+        import ckan.model as model
+
         obj = self._get_harvest_object(id)
         if obj is None:
             abort(404)
 
+        c.package = model.Package.get(obj.package_id)
         c.header_dict, body_html = transform_gemini_to_html(str(obj.content))
-        
+
         c.harvest_metadata_html = literal(body_html)
 
         return render('ckanext/spatial/harvest_metadata.html')
