@@ -9,7 +9,6 @@ The following plugins are currently available:
 * Spatial Search - Spatial search integration and API call (`spatial_query`).
 * Spatial Search Widget - Map widget integrated on the search form (`spatial_query_widget`).
 * Dataset Extent Map - Map widget showing a dataset extent (`dataset_extent_map`).
-* WMS Preview - a Web Map Service (WMS) previewer (`wms_preview`).
 * CSW Server - a basic CSW server - to server metadata from the CKAN instance (`cswserver`)
 * GEMINI Harvesters - for importing INSPIRE-style metadata into CKAN (`gemini_csw_harvester`, `gemini_doc_harvester`, `gemini_waf_harvester`)
 * Harvest Metadata API - a way for a user to view the harvested metadata XML, either as a raw file or styled to view in a web browser. (`spatial_harvest_metadata_api`)
@@ -101,20 +100,6 @@ ini file (See `Configuration`_). You need to load the `spatial_metadata` plugin 
 
 When the plugin is enabled, if datasets contain a 'spatial' extra like the one
 described in the previous section, a map will be shown on the dataset details page.
-
-
-WMS Preview
------------
-
-To enable the WMS previewer you need to add the `wms_preview` plugin to your
-ini file (See `Configuration`_).
-
-Please note that this is an experimental plugin and may be unstable.
-
-When the plugin is enabled, if datasets contain a resource that has 'WMS' format,
-a 'View available WMS layers' link will be displayed on the dataset details page.
-It forwards to a simple map viewer that will attempt to load the remote service
-layers, based on the GetCapabilities response.
 
 
 CSW Server
@@ -285,7 +270,7 @@ Check the Troubleshooting_ section if you get errors at this stage.
 
 Each plugin can be enabled by adding its name to the ``ckan.plugins`` in the CKAN ini file. For example::
 
-    ckan.plugins = spatial_metadata spatial_query spatial_query_widget dataset_extent_map wms_preview
+    ckan.plugins = spatial_metadata spatial_query spatial_query_widget dataset_extent_map
 
 **Note:** Plugins `spatial_query`, `spatial_query_widget` and `dataset_extent_map` depend on the `spatial_metadata` plugin also being enabled.
 
