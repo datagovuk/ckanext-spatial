@@ -30,7 +30,6 @@ setup(
     [ckan.plugins]
     spatial_metadata=ckanext.spatial.plugin:SpatialMetadata
     spatial_query=ckanext.spatial.plugin:SpatialQuery
-    wms_preview=ckanext.spatial.nongeos_plugin:WMSPreview
     cswserver=ckanext.spatial.plugin:CatalogueServiceWeb
     spatial_harvest_metadata_api=ckanext.spatial.plugin:HarvestMetadataApi
     gemini_csw_harvester=ckanext.spatial.harvesters.gemini:GeminiCswHarvester
