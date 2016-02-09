@@ -1107,33 +1107,6 @@ class TestGatherMethods(HarvestFixtureBase):
 
 
 class TestImportStageTools:
-    def test_licence_url_normal(self):
-        assert_equal(GeminiHarvester._extract_licence_urls(
-            ['Reference and PSMA Only',
-             'http://www.test.gov.uk/licenseurl']),
-                     ['http://www.test.gov.uk/licenseurl'])
-
-    def test_licence_url_multiple_urls(self):
-        # only the first URL is extracted
-        assert_equal(GeminiHarvester._extract_licence_urls(
-            ['Reference and PSMA Only',
-             'http://www.test.gov.uk/licenseurl',
-             'http://www.test.gov.uk/2nd_licenseurl']),
-                     ['http://www.test.gov.uk/licenseurl',
-                      'http://www.test.gov.uk/2nd_licenseurl'])
-
-    def test_licence_url_embedded(self):
-        # URL is embedded within the text field and not extracted
-        assert_equal(GeminiHarvester._extract_licence_urls(
-            ['Reference and PSMA Only http://www.test.gov.uk/licenseurl']),
-                     [])
-
-    def test_licence_url_embedded_at_start(self):
-        # URL is embedded at the start of the text field and the
-        # whole field is returned. Noting this unusual behaviour
-        assert_equal(GeminiHarvester._extract_licence_urls(
-            ['http://www.test.gov.uk/licenseurl Reference and PSMA Only']),
-                     ['http://www.test.gov.uk/licenseurl Reference and PSMA Only'])
 
     def test_responsible_organisation_basic(self):
         responsible_organisation = [{'organisation-name': 'Ordnance Survey',
@@ -1213,7 +1186,29 @@ class TestImportStageTools:
                   'anchor_href': None,
                   'anchor_title': None}
         assert_equal(GeminiHarvester._process_licence(**gemini),
-                     ({'licence': ['License available']}))
+                     ({'licence': 'License available'},
+                      ''))
+
+    def test_licence_ogl_recognized_as_whole(self):
+        gemini = {'use_constraints': ['OGL'],
+                  'anchor_href': None,
+                  'anchor_title': None}
+        assert_equal(GeminiHarvester._process_licence(**gemini),
+                     ({}, 'uk-ogl'))
+
+    def test_licence_ogl_recognized_as_part(self):
+        gemini = {'use_constraints': ['OGL', 'Another term'],
+                  'anchor_href': None,
+                  'anchor_title': None}
+        assert_equal(GeminiHarvester._process_licence(**gemini),
+                     ({'licence': 'OGL; Another term'}, 'uk-ogl'))
+
+    def test_licence_ogl_recognized_in_brackets(self):
+        gemini = {'use_constraints': ['Some terms'],
+                  'anchor_href': 'OGL',
+                  'anchor_title': 'Licence'}
+        assert_equal(GeminiHarvester._process_licence(**gemini),
+                     ({'licence': 'Some terms; Licence (OGL)'}, 'uk-ogl'))
 
     def test_licence_free_text_and_url(self):
         gemini = {'use_constraints': ['License available', 'Good',
@@ -1221,8 +1216,8 @@ class TestImportStageTools:
                   'anchor_href': None,
                   'anchor_title': None}
         assert_equal(GeminiHarvester._process_licence(**gemini),
-                     ({'licence': ['License available', 'Good'],
-                       'licence_url': 'http://license.com/terms.html'}))
+                     ({'licence': 'License available; Good; http://license.com/terms.html'},
+                      ''))
 
     def test_licence_multiple_urls(self):
         gemini = {'use_constraints': ['License available', 'Good',
@@ -1231,9 +1226,8 @@ class TestImportStageTools:
                   'anchor_href': None,
                   'anchor_title': None}
         assert_equal(GeminiHarvester._process_licence(**gemini),
-                     ({'licence': ['License available', 'Good',
-                                   'http://license.com/terms2.html'],
-                       'licence_url': 'http://license.com/terms1.html'}))
+                     ({'licence': 'License available; Good; http://license.com/terms1.html; http://license.com/terms2.html'},
+                      ''))
 
     def test_licence_anchor_url(self):
         gemini = {'use_constraints': ['License available', 'Good',
@@ -1242,10 +1236,8 @@ class TestImportStageTools:
                   'anchor_href': 'http://license.com/terms.html',
                   'anchor_title': None}
         assert_equal(GeminiHarvester._process_licence(**gemini),
-                     ({'licence': ['License available', 'Good',
-                                   'http://license.com/terms1.html',
-                                   'http://license.com/terms2.html'],
-                       'licence_url': 'http://license.com/terms.html'}))
+                     ({'licence': 'License available; Good; http://license.com/terms1.html; http://license.com/terms2.html; http://license.com/terms.html'},
+                      ''))
 
     def test_licence_anchor(self):
         gemini = {'use_constraints': ['License available', 'Good',
@@ -1254,11 +1246,8 @@ class TestImportStageTools:
                   'anchor_href': 'http://license.com/terms.html',
                   'anchor_title': 'The terms'}
         assert_equal(GeminiHarvester._process_licence(**gemini),
-                     ({'licence': ['License available', 'Good',
-                                   'http://license.com/terms1.html',
-                                   'http://license.com/terms2.html'],
-                       'licence_url': 'http://license.com/terms.html',
-                       'licence_url_title': 'The terms'}))
+                     ({'licence': 'License available; Good; http://license.com/terms1.html; http://license.com/terms2.html; The terms (http://license.com/terms.html)'},
+                      ''))
 
     def test_licence_anchor2(self):
         # This is how the locationmde.data.gov.uk puts it if there is text and
@@ -1267,8 +1256,8 @@ class TestImportStageTools:
                   'anchor_href': 'http://license.com/terms.html',
                   'anchor_title': 'The terms'}
         assert_equal(GeminiHarvester._process_licence(**gemini),
-                     ({'licence': ['The terms'],
-                       'licence_url': 'http://license.com/terms.html'}))
+                     ({'licence': 'The terms (http://license.com/terms.html)'},
+                      ''))
 
     def test_licence_anchor3(self):
         # 2 URLS - in user constraints free text AND anchor
@@ -1280,17 +1269,8 @@ class TestImportStageTools:
                   'anchor_href': 'http://anchor',
                   'anchor_title': None}
         assert_equal(GeminiHarvester._process_licence(**gemini),
-                     ({'licence': ['http://use-constraints'],
-                       'licence_url': 'http://anchor'}))
-
-    def test_licence_non_url_anchor(self):
-        # Anchor is not in fact a URL, so is recorded in 'licence' rather than
-        # 'licence_url'
-        gemini = {'use_constraints': [],
-                  'anchor_href': 'should be a url',
-                  'anchor_title': None}
-        assert_equal(GeminiHarvester._process_licence(**gemini),
-                     ({'licence': ['should be a url']}))
+                     ({'licence': 'http://use-constraints; http://anchor'},
+                      ''))
 
     def test_match_resources_with_existing_ones(self):
         res_dicts = [{'url': 'url1', 'name': 'name', 'description': 'desc'},
