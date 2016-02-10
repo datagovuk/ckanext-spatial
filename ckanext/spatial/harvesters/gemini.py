@@ -40,6 +40,8 @@ from ckan.lib.helpers import json
 from ckan import logic
 from ckan.logic import get_action, ValidationError
 
+from ckanext.dgu.lib import helpers as dgu_helpers
+
 from ckanext.harvest.interfaces import IHarvester
 from ckanext.harvest.model import HarvestObject
 from ckanext.harvest.harvesters.base import HarvesterBase
@@ -569,7 +571,7 @@ class GeminiHarvester(GeminiSpatialHarvester):
             extras[name] = gemini_values[name]
 
         # Licence
-        licence_extras = self._process_licence(
+        licence_extras, license_id = self._process_licence(
             use_constraints=gemini_values.get('use-constraints', ''),
             anchor_href=gemini_values.get('use-constraints-anchor-href'),
             anchor_title=gemini_values.get('use-constraints-anchor-title'),
@@ -621,7 +623,8 @@ class GeminiHarvester(GeminiSpatialHarvester):
             'title': gemini_values['title'],
             'notes': gemini_values['abstract'],
             'tags': tags,
-            'resources':[]
+            'resources': [],
+            'license_id': license_id,
         }
 
         if self.obj.source.publisher_id:
@@ -792,6 +795,7 @@ class GeminiHarvester(GeminiSpatialHarvester):
 
         These are extracted into their types and deposited into
         three extra fields:
+          * license id if it matches a known DGU one -> license_id
           * licence URL -> extras['licence_url']
           * licence name for the licence URL -> extras['licence_url_title']
           * free text and subsequent URLs -> extras['licence']
@@ -802,55 +806,28 @@ class GeminiHarvester(GeminiSpatialHarvester):
         extras = {}
 
         free_text = []
-        urls = []
-        if anchor_title and not use_constraints:
-            # it is better to have it in the licence extra than
-            # licence_url_title and we don't want it repeated
-            use_constraints = [anchor_title]
-            anchor_title = None
-        if anchor_href:
-            if cls._is_url(anchor_href):
-                if anchor_title:
-                    urls.append((anchor_href, anchor_title))
-                else:
-                    urls.append(anchor_href)
-            else:
-                # it should be a url, but since its not, we shouldn't record it
-                # as one else it will appear as a bad relative link on DGU
-                free_text.append(anchor_href)
-        for use_constraint in use_constraints:
-            if cls._is_url(use_constraint):
-                urls.append(use_constraint)
-            else:
-                free_text.append(use_constraint)
-        if urls:
-            # first url goes in the licence_url field
-            url = urls[0]
-            if isinstance(url, tuple):
-                extras['licence_url'] = url[0]
-                extras['licence_url_title'] = url[1]
-            else:
-                extras['licence_url'] = url
-            # subsequent urls just go in the licence field
-            for url in urls[1:]:
-                free_text.append(url)
-        extras['licence'] = free_text or ''
 
-        # TODO try and match a licence_url to an appropriate license_id and
-        # save it in the license_id field, but that requires the form schema
-        # to allow both license_id and licence.
+        if use_constraints:
+            free_text.extend(use_constraints)
 
-        return extras
+        if anchor_href and anchor_title:
+            free_text.append('%s (%s)' % (anchor_title, anchor_href))
+        elif anchor_href:
+            free_text.append(anchor_href)
+        elif anchor_title:
+            free_text.append(anchor_title)
 
-    @classmethod
-    def _extract_licence_urls(cls, licences):
-        '''Given a list of pieces of licence info, hunt for all the ones
-        that looks like a URL and return them as a list.'''
-        licence_urls = []
-        for licence in licences:
-            if cls._is_url(licence):
-                licence_urls.append(licence)
-        return licence_urls
+        if free_text:
+            # Try and match a licence_url to an appropriate license_id
+            all_free_text = '; '.join(free_text)
+            license_id, licence = \
+                dgu_helpers.get_licence_fields_from_free_text(all_free_text)
+            if licence:
+                extras['licence'] = licence
+        else:
+            license_id = None
+
+        return extras, license_id
 
     @classmethod
     def _is_url(cls, licence_str):
