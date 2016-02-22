@@ -157,17 +157,17 @@ class SpatialQuery(p.SingletonPlugin):
         return map
 
     def before_search(self,search_params):
-        from ckan.lib.search import SearchError
+        from ckan.lib.search import SearchQueryError
         from ckanext.spatial.lib import validate_bbox, bbox_query, bbox_query_ordered
         if 'extras' in search_params and 'ext_bbox' in search_params['extras'] \
             and search_params['extras']['ext_bbox']:
 
             bbox = validate_bbox(search_params['extras']['ext_bbox'])
             if not bbox:
-                raise SearchError('Wrong bounding box provided')
+                raise SearchQueryError('Wrong bounding box provided')
             if search_params.get('sort') == 'spatial desc':
                 if search_params.get('q') or search_params.get('fq'):
-                    raise SearchError('Spatial ranking cannot be mixed with other search parameters')
+                    raise SearchQueryError('Spatial ranking cannot be mixed with other search parameters')
                     # ...because it is too inefficient to use SOLR to filter
                     # results and return the entire set to this class and
                     # after_search do the sorting and paging.
