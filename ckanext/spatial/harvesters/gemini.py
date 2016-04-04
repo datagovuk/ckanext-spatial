@@ -692,11 +692,19 @@ class GeminiHarvester(GeminiSpatialHarvester):
             pass
 
         extras_as_dict = []
-        for key,value in extras.iteritems():
-            if isinstance(value,(basestring,Number)):
-                extras_as_dict.append({'key':key,'value':value})
+        for key, value in extras.iteritems():
+            if isinstance(value, unicode):
+                # DR: I'm not totally clear why it needs encoding, but it
+                # works. If we leave it as unicode strings then it gets double
+                # encoded and returned as e.g. u'\\u00a9 JNCC', but if we
+                # encode here as UTF8 then it's correctly returned as u'\xa9
+                # JNCC' in python, the JSON from the API is '\u00a9' (correct)
+                # and the symbols display on the webpage correctly.
+                extras_as_dict.append({'key': key, 'value': value.encode('utf8')})
+            elif isinstance(value, (basestring, Number)):
+                extras_as_dict.append({'key': key, 'value': value})
             else:
-                extras_as_dict.append({'key':key,'value':json.dumps(value)})
+                extras_as_dict.append({'key': key, 'value': json.dumps(value)})
 
         package_dict['extras'] = extras_as_dict
 
