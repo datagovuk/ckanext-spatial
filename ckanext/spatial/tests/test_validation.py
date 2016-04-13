@@ -131,6 +131,18 @@ class TestValidation:
                                           xml_filepath)
         assert not errs, 'Gemini2Schematron: ' + errs
 
+    def test_encoding_guidance_example(self):
+        xml_filepath = 'gemini2.1/os_example_from_encoding_guidance_1.4.xml'
+        errs = self.get_validation_errors(validation.ISO19139EdenSchema,
+                                          xml_filepath)
+        assert not errs, 'ISO19139EdenSchema: ' + errs
+        errs = self.get_validation_errors(validation.ConstraintsSchematron14,
+                                          xml_filepath)
+        assert not errs, 'ConstraintsSchematron14: ' + errs
+        errs = self.get_validation_errors(validation.Gemini2Schematron,
+                                          xml_filepath)
+        assert not errs, 'Gemini2Schematron: ' + errs
+
     def test_schematron_error_extraction(self):
         validation_error_xml = '''
 <root xmlns:svrl="http://purl.oclc.org/dsdl/svrl">
