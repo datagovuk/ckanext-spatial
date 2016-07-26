@@ -16,12 +16,12 @@ from urlparse import urlparse, urlunparse
 from datetime import datetime
 from string import Template
 from numbers import Number
+import requests.exceptions
 import uuid
 import os
 import logging
 import difflib
 import traceback
-import re
 import socket
 import httplib
 
@@ -857,10 +857,26 @@ class GeminiCswHarvester(GeminiHarvester, SingletonPlugin):
 
         try:
             self._setup_csw_client(url)
-        except Exception, e:
-            self._save_gather_error('Error contacting the CSW server: %s' % e, harvest_job)
+        except requests.exceptions.HTTPError, e:
+            # 400, 401 and 50x exceptions are raised (newer OWSLib)
+            self._save_gather_error(
+                'Error contacting the CSW server URL: %s Error: %s'
+                % (e.request.url, e), harvest_job)
             return None
-
+        except Exception, e:
+            # mimic code to create the GetCapabilities request that oswlib
+            # would have done
+            from urllib import urlencode
+            from owslib.util import bind_url
+            data = {'service': 'CSW',
+                    'version': '2.0.2',
+                    'request': 'GetCapabilities'}
+            request_params = urlencode(data)
+            expected_request = '%s%s' % (bind_url(url), request_params)
+            self._save_gather_error(
+                'Error contacting the CSW server. URL: %s Error: %s'
+                % (expected_request, e), harvest_job)
+            return None
 
         log.debug('Starting gathering for %s' % url)
         used_identifiers = []
