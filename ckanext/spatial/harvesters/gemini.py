@@ -1095,6 +1095,7 @@ class GeminiWafHarvester(GeminiHarvester, SingletonPlugin):
             # directory.  Whereas the original url "/folder" will give the
             # wrong base_url "/".
             # e.g. http://inspire.misoportal.com/metadata/files/westminster
+            guids = {}
             for url in self._extract_urls(content, waf_url, log):
                 try:
                     content, url = self._get_content(url)
@@ -1112,6 +1113,17 @@ class GeminiWafHarvester(GeminiHarvester, SingletonPlugin):
                         gemini_string, gemini_guid = self.get_gemini_string_and_guid(content,url)
                         if gemini_guid:
                             log.debug('Got GUID %s' % gemini_guid)
+
+                            # check for duplicate guid
+                            if gemini_guid in guids:
+                                msg = 'Duplicate GUIDs: '\
+                                    '%s has same gmd:fileIdentifier as %s: '\
+                                    '"%s"' % \
+                                    (url, guids[gemini_guid], gemini_guid)
+                                self._save_gather_error(msg, harvest_job)
+                                continue
+                            guids[gemini_guid] = url
+
                             # Create a new HarvestObject for this identifier
                             # Generally the content will be set in the fetch stage, but as we alredy
                             # have it, we might as well save a request
