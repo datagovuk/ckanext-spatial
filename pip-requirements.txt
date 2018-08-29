@@ -6,3 +6,9 @@ owslib>=0.8.6
 lxml==3.2.4
 argparse
 requests==1.1.0
+idna==2.7
+ndg-httpsclient==0.5.1
+pyasn1==0.4.4
+pyOpenSSL==18.0.0
+urllib3==1.23
+enum34==1.1.6

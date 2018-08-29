@@ -11,7 +11,8 @@ For metadata that is pure ISO19139 or INSPIRE (outside of the UK) we suggest
 you use alternative harvesters in this directory, such as CSWHarvester.
 '''
 import warnings
-import urllib2
+import requests
+from urllib3.contrib import pyopenssl
 from urlparse import urlparse, urlunparse
 from datetime import datetime
 from string import Template
@@ -103,16 +104,16 @@ class GeminiSpatialHarvester(HarvesterBase):
 
         May raise GetContentError.
         '''
+        pyopenssl.inject_into_urllib3()
         try:
-            http_response = urllib2.urlopen(url)
-            content = http_response.read()
-        except urllib2.HTTPError, e:
+            http_request = requests.get(url)
+        except requests.exceptions.HTTPError, e:
             raise GetContentError('Server responded with an error when accessing URL: %s Status: %s Reason: %r' % \
                    (url, e.code, e.msg))
             # NB HTTPError.reason is the documented way, but that only works for
             #    Python 2.7 and is an alias for HTTPError.msg anyway.
             return None
-        except urllib2.URLError, e:
+        except requests.exceptions.URLError, e:
             raise GetContentError('URL syntax error or could not make connection to the host server. URL: "%s" Error: %r' % \
                                   (url, e.reason))
             return None
@@ -125,7 +126,8 @@ class GeminiSpatialHarvester(HarvesterBase):
         except httplib.HTTPException, e:
             log.info('HTTP access of %s failed due to HTTP error "%s".', url, e)
             return False
-        return (content, http_response.geturl())
+        content = http_request.text
+        return (content, url)
 
 
 class GeminiHarvester(GeminiSpatialHarvester):
@@ -921,7 +923,7 @@ class GeminiCswHarvester(GeminiHarvester, SingletonPlugin):
                         raise
                     continue
 
-        except (urllib2.URLError, socket.error) as e:
+        except (URLError, socket.error) as e:
             log.info('Exception: %s' % text_traceback())
             self._save_gather_error('URL Error gathering the identifiers from the CSW server [%s]' % str(e), harvest_job)
             if debug_exception_mode:
