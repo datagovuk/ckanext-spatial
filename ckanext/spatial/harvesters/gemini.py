@@ -126,7 +126,7 @@ class GeminiSpatialHarvester(HarvesterBase):
         except httplib.HTTPException, e:
             log.info('HTTP access of %s failed due to HTTP error "%s".', url, e)
             return False
-        content = http_request.text
+        content = http_request.content
         return (content, url)
 
 
