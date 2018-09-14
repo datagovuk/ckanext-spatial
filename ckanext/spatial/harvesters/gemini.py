@@ -126,7 +126,7 @@ class GeminiSpatialHarvester(HarvesterBase):
         except httplib.HTTPException, e:
             log.info('HTTP access of %s failed due to HTTP error "%s".', url, e)
             return False
-        content = http_request.text
+        content = http_request.content
         return (content, url)
 
 
@@ -209,7 +209,7 @@ class GeminiHarvester(GeminiSpatialHarvester):
         # quite safely. But we enclose in the try: block because that will
         # be needed when we start using _get_content_as_unicode in the future.
         try:
-            gemini_string = str(gemini_string)
+            gemini_string = gemini_string.decode()
         except UnicodeEncodeError:
             pass
         xml = etree.fromstring(gemini_string)
