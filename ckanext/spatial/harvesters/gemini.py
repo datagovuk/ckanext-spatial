@@ -209,7 +209,7 @@ class GeminiHarvester(GeminiSpatialHarvester):
         # quite safely. But we enclose in the try: block because that will
         # be needed when we start using _get_content_as_unicode in the future.
         try:
-            gemini_string = gemini_string.decode()
+            gemini_string = str(gemini_string)
         except UnicodeEncodeError:
             pass
         xml = etree.fromstring(gemini_string)
